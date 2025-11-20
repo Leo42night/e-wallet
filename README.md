@@ -3,7 +3,7 @@ Mata Kuliah Pemograman Beroirentasi Objek. Tugas Besar
 Project Based.
 
 - [Link Instruksi](https://drive.google.com/file/d/134K4XR0yMoJ6nDGVRD3gYxO_lsVVeROp/view?usp=sharing)
-- [Link Laporan](#)
+- [Link Laporan](https://docs.google.com/document/d/1LSVgvilda2l7KdfXjVU_sAkMjcd6hPkfvUlmGGsPRdY/edit?usp=sharing)
 
 Team:
 1. Leo Prangs Tobing - H1101221016

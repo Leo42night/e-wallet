@@ -1,16 +1,16 @@
 # e_wallet
+Mata Kuliah Pemograman Beroirentasi Objek. Tugas Besar
+Project Based.
 
-A new Flutter project.
+- [Link Instruksi](https://drive.google.com/file/d/134K4XR0yMoJ6nDGVRD3gYxO_lsVVeROp/view?usp=sharing)
+- [Link Laporan](#)
 
-## Getting Started
+Team:
+1. Leo Prangs Tobing - H1101221016
+2. Aldinata Retnas - H1101221065
+3. Elga Firman - H1101221004
+4. Satrio Martin M. W. - H1101231039 
 
-This project is a starting point for a Flutter application.
+## Feature & Tech
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## How To Use

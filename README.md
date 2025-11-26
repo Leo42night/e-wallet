@@ -11,7 +11,20 @@ Team:
 3. Elga Firman - H1101221004
 4. Satrio Martin M. W. - H1101231039 
 
-## Feature & Tech
+## Feature
+- Autentikasi Google
+- Transaski
+- History
+
+## Stack
+Development:
 - PNPM (v10) (Node Package Manager untuk server BE)
+
+Tech:
+- Firebase Auth
+- Google Sign In
+- Google Cloud Run
+- Google Cloud SQL
+- 
 
 ## How To Use

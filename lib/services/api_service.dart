@@ -1,6 +1,7 @@
 // services/api_service.dart
 import 'dart:convert';
 import 'dart:io';
+import 'package:e_wallet/models/transaction.dart';
 import 'package:http/http.dart' as http;
 
 class ApiService {
@@ -10,10 +11,11 @@ class ApiService {
   // - iOS Simulator: http://localhost:3000/api
   // - Real Device: http://YOUR_COMPUTER_IP:3000/api (contoh: http://192.168.1.100:3000/api)
   // Untuk production: https://your-domain.com/api
-  
-  static const String baseUrl = 'https://be-wallet-690018681390.asia-southeast1.run.app/api'; // Production
-  // static const String baseUrl = 'http://192.168.1.10:3000/api'; // Local test
-  
+
+  // static const String baseUrl =
+  //     'https://be-wallet-690018681390.asia-southeast1.run.app/api'; // Production
+  static const String baseUrl = 'http://192.168.1.10:3000/api'; // Local test
+
   // Timeout duration
   static const Duration timeoutDuration = Duration(seconds: 30);
 
@@ -54,45 +56,22 @@ class ApiService {
           'message': 'Login berhasil',
         };
       } else if (response.statusCode == 400) {
-        return {
-          'success': false,
-          'error': 'Data tidak valid',
-        };
+        return {'success': false, 'error': 'Data tidak valid'};
       } else if (response.statusCode == 500) {
-        return {
-          'success': false,
-          'error': 'Server error, coba lagi nanti',
-        };
+        return {'success': false, 'error': 'Server error, coba lagi nanti'};
       } else {
-        return {
-          'success': false,
-          'error': 'Error: ${response.statusCode}',
-        };
+        return {'success': false, 'error': 'Error: ${response.statusCode}'};
       }
     } on SocketException {
-      return {
-        'success': false,
-        'error': 'Tidak ada koneksi internet',
-      };
+      return {'success': false, 'error': 'Tidak ada koneksi internet'};
     } on http.ClientException {
-      return {
-        'success': false,
-        'error': 'Gagal terhubung ke server',
-      };
+      return {'success': false, 'error': 'Gagal terhubung ke server'};
     } on FormatException {
-      return {
-        'success': false,
-        'error': 'Format response tidak valid',
-      };
+      return {'success': false, 'error': 'Format response tidak valid'};
     } catch (e) {
-      return {
-        'success': false,
-        'error': 'Terjadi kesalahan: ${e.toString()}',
-      };
+      return {'success': false, 'error': 'Terjadi kesalahan: ${e.toString()}'};
     }
   }
-
-  // sign Up with username/email and password
 
   /// Get user data berdasarkan email
   /// Digunakan untuk refresh balance dan data user
@@ -102,9 +81,7 @@ class ApiService {
       final response = await http
           .get(
             Uri.parse('$baseUrl/user/email?email=$encodedEmail'),
-            headers: {
-              'Accept': 'application/json',
-            },
+            headers: {'Accept': 'application/json'},
           )
           .timeout(timeoutDuration);
 
@@ -112,46 +89,22 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         // print("DECODED (USER): $data");
-        return {
-          'success': true,
-          'user': data['user'],
-        };
+        return {'success': true, 'user': data['user']};
       } else if (response.statusCode == 404) {
-        return {
-          'success': false,
-          'error': 'User tidak ditemukan',
-        };
+        return {'success': false, 'error': 'User tidak ditemukan'};
       } else if (response.statusCode == 500) {
-        return {
-          'success': false,
-          'error': 'Server error',
-        };
+        return {'success': false, 'error': 'Server error'};
       } else {
-        return {
-          'success': false,
-          'error': 'Error: ${response.statusCode}',
-        };
+        return {'success': false, 'error': 'Error: ${response.statusCode}'};
       }
     } on SocketException {
-      return {
-        'success': false,
-        'error': 'Tidak ada koneksi internet',
-      };
+      return {'success': false, 'error': 'Tidak ada koneksi internet'};
     } on http.ClientException {
-      return {
-        'success': false,
-        'error': 'Gagal terhubung ke server',
-      };
+      return {'success': false, 'error': 'Gagal terhubung ke server'};
     } on FormatException {
-      return {
-        'success': false,
-        'error': 'Format response tidak valid',
-      };
+      return {'success': false, 'error': 'Format response tidak valid'};
     } catch (e) {
-      return {
-        'success': false,
-        'error': 'Terjadi kesalahan: ${e.toString()}',
-      };
+      return {'success': false, 'error': 'Terjadi kesalahan: ${e.toString()}'};
     }
   }
 
@@ -161,31 +114,21 @@ class ApiService {
       final response = await http
           .get(
             Uri.parse('$baseUrl/user/telp?telp=$encodedTelp'),
-            headers: {
-              'Accept': 'application/json',
-            },
+            headers: {'Accept': 'application/json'},
           )
           .timeout(timeoutDuration);
-      if(response.statusCode == 200){
+      if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         // print("DECODED (USER): $data");
-        return {
-          'success': true,
-          'user': data['user'],
-        };
+        return {'success': true, 'user': data['user']};
       } else {
-        return {
-          'success': false,
-          'error': 'Error: ${response.statusCode}',
-        };
+        return {'success': false, 'error': 'Error: ${response.statusCode}'};
       }
     } catch (e) {
-      return {
-        'success': false,
-        'error': 'Terjadi kesalahan: ${e.toString()}',
-      };
+      return {'success': false, 'error': 'Terjadi kesalahan: ${e.toString()}'};
     }
   }
+
   /// Update balance user (untuk fitur top up)
   Future<Map<String, dynamic>> updateBalance({
     required String email,
@@ -199,10 +142,7 @@ class ApiService {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
             },
-            body: jsonEncode({
-              'email': email,
-              'amount': amount,
-            }),
+            body: jsonEncode({'email': email, 'amount': amount}),
           )
           .timeout(timeoutDuration);
 
@@ -217,26 +157,14 @@ class ApiService {
           'message': 'Balance berhasil diupdate',
         };
       } else {
-        return {
-          'success': false,
-          'error': 'Gagal update balance',
-        };
+        return {'success': false, 'error': 'Gagal update balance'};
       }
     } on SocketException {
-      return {
-        'success': false,
-        'error': 'Tidak ada koneksi internet',
-      };
+      return {'success': false, 'error': 'Tidak ada koneksi internet'};
     } on http.ClientException {
-      return {
-        'success': false,
-        'error': 'Gagal terhubung ke server',
-      };
+      return {'success': false, 'error': 'Gagal terhubung ke server'};
     } catch (e) {
-      return {
-        'success': false,
-        'error': 'Terjadi kesalahan: ${e.toString()}',
-      };
+      return {'success': false, 'error': 'Terjadi kesalahan: ${e.toString()}'};
     }
   }
 
@@ -275,78 +203,42 @@ class ApiService {
         };
       } else if (response.statusCode == 400) {
         final data = jsonDecode(response.body);
-        return {
-          'success': false,
-          'error': data['error'] ?? 'Transfer gagal',
-        };
+        return {'success': false, 'error': data['error'] ?? 'Transfer gagal'};
       } else {
-        return {
-          'success': false,
-          'error': 'Transfer gagal',
-        };
+        return {'success': false, 'error': 'Transfer gagal'};
       }
     } on SocketException {
-      return {
-        'success': false,
-        'error': 'Tidak ada koneksi internet',
-      };
+      return {'success': false, 'error': 'Tidak ada koneksi internet'};
     } on http.ClientException {
-      return {
-        'success': false,
-        'error': 'Gagal terhubung ke server',
-      };
+      return {'success': false, 'error': 'Gagal terhubung ke server'};
     } catch (e) {
-      return {
-        'success': false,
-        'error': 'Terjadi kesalahan: ${e.toString()}',
-      };
+      return {'success': false, 'error': 'Terjadi kesalahan: ${e.toString()}'};
     }
   }
 
   /// Get transaction history
-  Future<Map<String, dynamic>> getTransactionHistory(String email) async {
+  Future<List<TransactionModel>> getTransactionHistory(String id) async {
+    print("id: $id");
     try {
-      final encodedEmail = Uri.encodeComponent(email);
-      final response = await http
-          .get(
-            Uri.parse('$baseUrl/transaction/history/$encodedEmail'),
-            headers: {
-              'Accept': 'application/json',
-            },
-          )
-          .timeout(timeoutDuration);
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return {
-          'success': true,
-          'transactions': data['transactions'] ?? [],
-        };
-      } else {
-        return {
-          'success': false,
-          'error': 'Gagal mengambil riwayat transaksi',
-          'transactions': [],
-        };
-      }
-    } on SocketException {
-      return {
-        'success': false,
-        'error': 'Tidak ada koneksi internet',
-        'transactions': [],
-      };
-    } on http.ClientException {
-      return {
-        'success': false,
-        'error': 'Gagal terhubung ke server',
-        'transactions': [],
-      };
-    } catch (e) {
-      return {
-        'success': false,
-        'error': 'Terjadi kesalahan: ${e.toString()}',
-        'transactions': [],
-      };
+    final response = await http.get(
+      Uri.parse('$baseUrl/transaction/history/$id'),
+    );
+    
+    if (response.statusCode.toInt() == 200) {
+      final data = jsonDecode(response.body);
+      print("data: $data");
+      final list = (data['transactions'] as List)
+          .map((e) => TransactionModel.fromJson(e))
+          .toList();
+      print("List: $list");
+      return list;
+    } else {
+      return [];
+    }
+    } catch(e, stackTrace) {
+      print("ERROR PARSING: $e");
+      print("STACK TRACE: $stackTrace");
+      return [];
     }
   }
 

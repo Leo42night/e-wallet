@@ -1,4 +1,5 @@
 // screens/home_screen.dart
+import 'package:e_wallet/screens/history.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -7,6 +8,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../services/api_service.dart';
 import 'auth/login_screen.dart';
 import 'package:e_wallet/screens/qr/scan_qr_screen.dart';
+import 'package:e_wallet/utils/helpers.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -244,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Rp ${_formatRupiah(_balance)}',
+                      'Rp ${formatRupiah(_balance)}',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 36,
@@ -429,7 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   label: "Riwayat",
                   color: Colors.orange,
                   onTap: () {
-                    _showSnackBar("Fitur Riwayat segera hadir!", Colors.blue);
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen()));
                   },
                 ),
               ),
@@ -553,14 +555,6 @@ class _HomeScreenState extends State<HomeScreen> {
         subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
         trailing: const Icon(Icons.chevron_right, color: Colors.grey),
       ),
-    );
-  }
-
-  String _formatRupiah(double value) {
-    final str = value.toStringAsFixed(0);
-    return str.replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
     );
   }
 }

@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:vibration/vibration.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:e_wallet/providers/transfer_provider.dart';
 import 'package:e_wallet/models/user.dart';
 import 'package:e_wallet/screens/transfer/transfer_amount_screen.dart';
+import 'package:e_wallet/screens/qr/show_qr_screen.dart'; // Import show QR screen
 
 class ScanQrScreen extends StatefulWidget {
   const ScanQrScreen({super.key});
@@ -18,13 +20,18 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
   final MobileScannerController cameraController = MobileScannerController(
     facing: CameraFacing.back,
     torchEnabled: false,
-    detectionSpeed: DetectionSpeed.normal, // Tidak terlalu cepat
-    detectionTimeoutMs: 1000, // Cooldown 1 detik antar scan
+    detectionSpeed: DetectionSpeed.normal,
+    detectionTimeoutMs: 1000,
   );
 
   String? scannedValue;
   bool isProcessing = false;
   DateTime? lastScanTime;
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   void dispose() {
@@ -49,23 +56,18 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
       lastScanTime = now;
     });
 
-    // Pause camera saat processing
     await cameraController.stop();
 
-    // Vibrate feedback
     bool? canVibrate = await Vibration.hasVibrator();
     if(canVibrate == true) Vibration.vibrate();
 
-    // Ambil Data
     final scannedContact = await _fetchUserFromQR(code);
 
     if (!mounted) return;
 
     if (scannedContact != null) {
-      // Berhasil - Set contact ke provider dan navigasi ke amount screen
       Provider.of<TransferProvider>(context, listen: false).selectContact(scannedContact);
       
-      // Show success dialog
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -92,7 +94,6 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
                 ),
                 child: Row(
                   children: [
-                    // Avatar/Logo
                     Container(
                       width: 40,
                       height: 40,
@@ -138,16 +139,16 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context); // Close dialog
+                Navigator.pop(context);
                 setState(() => isProcessing = false);
-                cameraController.start(); // Resume camera
+                cameraController.start();
               },
               child: const Text("Scan Lagi", style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context); // Close dialog
-                Navigator.pop(context); // Close scanner
+                Navigator.pop(context);
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const TransferAmountScreen()),
@@ -163,7 +164,6 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
         ),
       );
     } else {
-      // Gagal - QR tidak valid
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
@@ -240,20 +240,17 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
       ),
       body: Stack(
         children: [
-          // Camera View
           MobileScanner(
             onDetect: handleScan,
             controller: cameraController,
           ),
 
-          // Overlay dengan area scan
           Container(
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.5),
             ),
             child: Stack(
               children: [
-                // Transparent center untuk scan area
                 Center(
                   child: Container(
                     width: 260,
@@ -272,13 +269,12 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
                     ),
                     child: Stack(
                       children: [
-                        // Corner indicators
                         ...List.generate(4, (index) {
                           final positions = [
-                            (top: 0.0, left: 0.0, right: null, bottom: null), // Top-left
-                            (top: 0.0, left: null, right: 0.0, bottom: null), // Top-right
-                            (top: null, left: 0.0, right: null, bottom: 0.0), // Bottom-left
-                            (top: null, left: null, right: 0.0, bottom: 0.0), // Bottom-right
+                            (top: 0.0, left: 0.0, right: null, bottom: null),
+                            (top: 0.0, left: null, right: 0.0, bottom: null),
+                            (top: null, left: 0.0, right: null, bottom: 0.0),
+                            (top: null, left: null, right: 0.0, bottom: 0.0),
                           ];
                           return Positioned(
                             top: positions[index].top,
@@ -304,7 +300,6 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
                   ),
                 ),
 
-                // Instruction text
                 Positioned(
                   bottom: 100,
                   left: 0,
@@ -335,11 +330,43 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
             ),
           ),
 
-          // Create cutout for scan area
           ClipPath(
             clipper: ScanAreaClipper(),
             child: Container(
               color: Colors.black.withOpacity(0.6),
+            ),
+          ),
+
+          // Toggle Button untuk pergi ke Show QR Screen
+          Positioned(
+            bottom: 30,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.5),
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: FloatingActionButton(
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ShowQrScreen()),
+                    );
+                  },
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  shape: const CircleBorder(),
+                  child: const Icon(Icons.qr_code, size: 28),
+                ),
+              ),
             ),
           ),
         ],
@@ -348,7 +375,6 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
   }
 }
 
-// Custom clipper untuk membuat cutout di tengah
 class ScanAreaClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {

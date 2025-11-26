@@ -186,6 +186,44 @@ class ApiService {
       };
     }
   }
+
+  /// Get user data berdasarkan ID
+  Future<Map<String, dynamic>> getUserDataById(String id) async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/user/id/$id'),
+            headers: {
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(timeoutDuration);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'success': true,
+          'user': data['user'],
+        };
+      } else if (response.statusCode == 404) {
+        return {
+          'success': false,
+          'error': 'User tidak ditemukan',
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Error: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Terjadi kesalahan: ${e.toString()}',
+      };
+    }
+  }
+
   /// Update balance user (untuk fitur top up)
   Future<Map<String, dynamic>> updateBalance({
     required String email,
@@ -304,12 +342,11 @@ class ApiService {
   }
 
   /// Get transaction history
-  Future<Map<String, dynamic>> getTransactionHistory(String email) async {
+  Future<Map<String, dynamic>> getTransactionHistory(String userId) async {
     try {
-      final encodedEmail = Uri.encodeComponent(email);
       final response = await http
           .get(
-            Uri.parse('$baseUrl/transaction/history/$encodedEmail'),
+            Uri.parse('$baseUrl/transaction/history/$userId'),
             headers: {
               'Accept': 'application/json',
             },

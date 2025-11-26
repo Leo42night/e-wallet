@@ -103,7 +103,6 @@ class _TransferConfirmPinScreenState extends State<TransferConfirmPinScreen> {
             context,
             listen: false,
           );
-          // print("TRANSFER: ${transfer.selectedContact?.id}");
           final success = await transfer.verifyPin(pin);
           if (success) {
             // PROSES API transferBalance
@@ -111,15 +110,25 @@ class _TransferConfirmPinScreenState extends State<TransferConfirmPinScreen> {
             try {
               final currUserId = prefs.getString('user_id') ?? '';
               final api = ApiService();
-              final message = 'Transfer ke ${transfer.selectedContact?.name} Berhasil!'; 
+              final messageTransfer = widget.note.isEmpty
+                  ? 'Transfer ke ${transfer.selectedContact?.name}'
+                  : widget.note;
+
+              final message =
+                  'Transfer ke ${transfer.selectedContact?.name} Berhasil!';
+
+              // ✅ Gunakan widget.note di sini
               final result = await api.transferBalance(
                 from: currUserId,
                 to: transfer.selectedContact!.id,
                 amount: transfer.amount?.toDouble() ?? 0,
-                message: 'Transfer ke ${transfer.selectedContact?.name}',
+                message: messageTransfer,
               );
+
               if (result['success'] && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(message)));
                 Provider.of<TransferProvider>(
                   context,
                   listen: false,
@@ -127,11 +136,15 @@ class _TransferConfirmPinScreenState extends State<TransferConfirmPinScreen> {
                 Navigator.popUntil(context, (route) => route.isFirst);
               } else if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(result['error'])),
+                  SnackBar(content: Text(result['error'] ?? 'Transfer gagal')),
                 );
               }
             } catch (e) {
-              // print("ERROR trasferConfirmPinScreenState pinButton tap: $e");
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Terjadi kesalahan')),
+                );
+              }
             }
           } else {
             setState(() => pin = '');

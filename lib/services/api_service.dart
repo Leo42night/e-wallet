@@ -12,9 +12,9 @@ class ApiService {
   // - Real Device: http://YOUR_COMPUTER_IP:3000/api (contoh: http://192.168.1.100:3000/api)
   // Untuk production: https://your-domain.com/api
 
-  // static const String baseUrl =
-  //     'https://be-wallet-690018681390.asia-southeast1.run.app/api'; // Production
-  static const String baseUrl = 'http://192.168.1.10:3000/api'; // Local test
+  static const String baseUrl =
+      'https://be-wallet-690018681390.asia-southeast1.run.app/api'; // Production
+  // static const String baseUrl = 'http://192.168.1.10:3000/api'; // Leo orl
 
   // Timeout duration
   static const Duration timeoutDuration = Duration(seconds: 30);
@@ -129,6 +129,29 @@ class ApiService {
     }
   }
 
+  /// Get user data berdasarkan ID
+  Future<Map<String, dynamic>> getUserDataById(String id) async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/user/id/$id'),
+            headers: {'Accept': 'application/json'},
+          )
+          .timeout(timeoutDuration);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {'success': true, 'user': data['user']};
+      } else if (response.statusCode == 404) {
+        return {'success': false, 'error': 'User tidak ditemukan'};
+      } else {
+        return {'success': false, 'error': 'Error: ${response.statusCode}'};
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Terjadi kesalahan: ${e.toString()}'};
+    }
+  }
+
   /// Update balance user (untuk fitur top up)
   Future<Map<String, dynamic>> updateBalance({
     required String email,
@@ -176,7 +199,8 @@ class ApiService {
     required String message,
   }) async {
     try {
-      // print("FROM: $from, TO: $to, AMOUNT: $amount, MESSAGE: $message");
+      // print("FROM: $from, TO: $to, AMOUNT: $amount, MESSAGE: $message, type: ${message.runtimeType}");
+      // return {'success': false, 'error': 'Transfer gagal'};
       final response = await http
           .post(
             Uri.parse('$baseUrl/transaction/transfer'),
@@ -217,28 +241,37 @@ class ApiService {
   }
 
   /// Get transaction history
-  Future<List<TransactionModel>> getTransactionHistory(String id) async {
-    print("id: $id");
+  Future<Map<String, dynamic>> getTransactionHistory(String id) async {
+    // print("id: $id");
     try {
-    final response = await http.get(
-      Uri.parse('$baseUrl/transaction/history/$id'),
-    );
-    
-    if (response.statusCode.toInt() == 200) {
-      final data = jsonDecode(response.body);
-      print("data: $data");
-      final list = (data['transactions'] as List)
-          .map((e) => TransactionModel.fromJson(e))
-          .toList();
-      print("List: $list");
-      return list;
-    } else {
-      return [];
-    }
-    } catch(e, stackTrace) {
-      print("ERROR PARSING: $e");
-      print("STACK TRACE: $stackTrace");
-      return [];
+      final response = await http.get(
+        Uri.parse('$baseUrl/transaction/history/$id'),
+      );
+
+      if (response.statusCode.toInt() == 200) {
+        final data = jsonDecode(response.body);
+        // print("data: $data");
+        final list = (data['transactions'] as List)
+            .map((e) => TransactionModel.fromJson(e))
+            .toList();
+        // print("List: $list");
+        return {
+          'success': true,
+          'transactions': list,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Error: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      // print("ERROR PARSING: $e");
+      // print("STACK TRACE: $stackTrace");
+      return {
+        'success': false,
+        'error': 'Terjadi kesalahan: ${e.toString()}',
+      };
     }
   }
 

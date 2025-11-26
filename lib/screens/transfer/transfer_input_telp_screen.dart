@@ -23,12 +23,29 @@ class _TransferInputNumberScreenState extends State<TransferInputNumberScreen>
   String? _errorText;
   bool _isLoading = false;
 
-  // Cek apakah nomor ada di database
+  // Cek apakah nomor ada di database berdasarkan telp
+  // Jika tidak ada, cek API kemudian buat user baru jika masih tidak ditemukan
   Future<User?> _findContactByTelp(String telp) async {
-    final api = ApiService();
-    final result = await api.getUserDataByEmail(telp);
-    if(result['success'] == true) return User.fromJson(result['user'] ?? {});
-    return null;
+    try {
+      final api = ApiService();
+      final result = await api.getUserDataByTelp(telp);
+      if (result['success'] == true) {
+        return User.fromJson(result['user'] ?? {});
+      }
+    } catch (e) {
+      // Lanjut ke langkah berikutnya
+    }
+
+    // Jika nomor tidak ada di database, buat user baru
+    // User baru akan memiliki id '-1', name = nomor, dan email = nomor@temporary.com
+    return User(
+      id: '-1', // Temporary ID untuk menandakan user baru
+      name: 'Pengguna: $telp',
+      email: '$telp@temporary.com',
+      telp: telp,
+      balance: 0,
+      photoUrl: 'https://via.placeholder.com/150?text=User',
+    );
   }
 
   Future<void> _validateAndProceed(String input) async {
@@ -58,20 +75,20 @@ class _TransferInputNumberScreenState extends State<TransferInputNumberScreen>
       return;
     }
 
-    // Cek di database
+    // Cek di database (atau buat user baru jika tidak ada)
     final contact = await _findContactByTelp(trimmed);
 
     if (!mounted) return;
 
     if (contact == null) {
       setState(() {
-        _errorText = 'Nomor tidak terdaftar';
+        _errorText = 'Terjadi kesalahan';
         _isLoading = false;
       });
       return;
     }
 
-    // SUCCESS! Nomor ditemukan
+    // SUCCESS! Nomor ditemukan atau user baru dibuat
     Provider.of<TransferProvider>(context, listen: false)
       ..setManualNumber(trimmed)
       ..selectContact(contact); // langsung set contact!

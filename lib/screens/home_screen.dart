@@ -1,14 +1,22 @@
 // screens/home_screen.dart
+import 'package:e_wallet/models/transaction.dart';
 import 'package:e_wallet/screens/history.dart';
 import 'package:flutter/material.dart';
+import 'package:timeago/timeago.dart' as timeago;
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import '../services/api_service.dart';
 import 'auth/login_screen.dart';
 import 'package:e_wallet/screens/qr/scan_qr_screen.dart';
 import 'package:e_wallet/utils/helpers.dart';
+import 'package:e_wallet/screens/qr/show_qr_screen.dart';
+import 'package:e_wallet/screens/transfer/transfer_main_screen.dart';
+import '../providers/saldo_providers.dart';
+import '../widgets/action_bar.dart';
+import '../widgets/mini_action_bar.dart';
+// import '../widgets/mini_history.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,13 +26,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  String _userId = '';
   String _userName = '';
   String _userEmail = '';
-  String _userPhotoUrl = '';
-  String _userTelp = '';
   double _balance = 0.0;
   bool _isLoading = true;
-  bool _isRefreshing = false;
+  List<TransactionModel> _transactions = [];
 
   @override
   void initState() {
@@ -38,10 +45,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (email != null) {
       setState(() {
+        _userId = prefs.getString('user_id') ?? '';
         _userName = prefs.getString('user_name') ?? '';
         _userEmail = email;
-        _userPhotoUrl = prefs.getString('user_photo_url') ?? '';
-        _userTelp = prefs.getString('user_telp') ?? '';
         _balance = prefs.getDouble('user_balance') ?? 0.0;
         _isLoading = false;
       });
@@ -59,7 +65,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _refreshFromServer() async {
     if (!mounted) return;
-    setState(() => _isRefreshing = true);
 
     final prefs = await SharedPreferences.getInstance();
     final email = prefs.getString('user_email');
@@ -67,7 +72,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (email != null) {
       final api = ApiService();
       final result = await api.getUserDataByEmail(email);
-      // print("_refreshFromServer:>>> $result");
 
       if (result['success'] == true && result['user'] != null) {
         final user = result['user'];
@@ -89,22 +93,56 @@ class _HomeScreenState extends State<HomeScreen> {
         await prefs.setDouble('user_balance', newBalance);
         await prefs.setString('user_name', user['name'] ?? '');
       } else {
-        _showSnackBar("Gagal Load Data User: ${result['error']}", Colors.orange);
-        // kembali ke halaman login
+        _showSnackBar(
+          "Gagal Load Data User: ${result['error']}",
+          Colors.orange,
+        );
         if (mounted) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const LoginScreen()),
           );
         }
-        // reset shared preferences
         await prefs.clear();
       }
-    }
 
-    if (mounted) {
-      setState(() => _isRefreshing = false);
+      final transactionResult = await api.getTransactionHistory(_userId);
+      if (transactionResult['success'] == true) {
+        setState(
+          () => _transactions =
+              transactionResult['transactions'] as List<TransactionModel>,
+        );
+      } else {
+        _showSnackBar(
+          "Gagal Load Data Transaksi: ${transactionResult['error']}",
+          Colors.orange,
+        );
+      }
     }
+  }
+
+  void _showSnackBar(String message, Color color) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showComingSoon(String fitur) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Fitur "$fitur" sedang dalam pengembangan'),
+        backgroundColor: Colors.blue[700],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _logout() async {
@@ -119,9 +157,9 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => Navigator.pop(ctx, false),
           ),
           TextButton(
-            child: const Text("Keluar"),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("Keluar")
           ),
         ],
       ),
@@ -147,414 +185,313 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _showSnackBar(String message, Color color) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: color,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    final saldoProv = Provider.of<SaldoProvider>(context);
+
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text('E-Wallet'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          if (_isRefreshing)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _refreshFromServer,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              _buildBalanceCard(),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _refreshFromServer,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                // HEADER KREM
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                  decoration: const BoxDecoration(color: Color(0xFFF9EFE5)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "EasyPay",
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
 
-              const SizedBox(height: 16),
-              _buildQuickActions(),
-              const SizedBox(height: 24),
-              _buildMenuList(),
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ===================== UI ======================
-
-  Widget _buildBalanceCard() {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.blue.shade600, Colors.blue.shade900],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ROW SALDO + QR POPUP
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Saldo
-              Expanded(
-                flex: 2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Total Saldo",
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Rp ${formatRupiah(_balance)}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 36,
-                        fontWeight: FontWeight.bold,
+                          // Logout
+                          GestureDetector(
+                            child: const Icon(Icons.logout),
+                            onTap: _logout,
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              // 🔥 TOMBOL QR CODE
-              GestureDetector(
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              "Hai, $_userName",
+                              style: const TextStyle(
+                                fontSize: 20,
+                                color: Colors.black87,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        ],
                       ),
-                      content: Container(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
+                      const SizedBox(height: 6),
+                      Text(
+                        _userEmail,
+                        style: TextStyle(fontSize: 14, color: Colors.black87),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                saldoProv.isHidden
+                                    ? "••••••••"
+                                    : formatRupiah(_balance),
+                                style: const TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              GestureDetector(
+                                onTap: () => saldoProv.toggleVisibility(),
+                                child: Icon(
+                                  saldoProv.isHidden
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                  color: Colors.black54,
+                                  size: 28,
+                                ),
+                              ),
+                            ],
+                          ),
+                          GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ShowQrScreen(),
+                              ),
+                            ),
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.qr_code_2,
+                                color: Colors.black87,
+                                size: 24,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      ActionBar(
+                        onPindai: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ScanQrScreen(),
+                          ),
+                        ),
+                        onIsiSaldo: () => _showComingSoon("Isi Saldo"),
+                        onKirim: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TransferMainScreen(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 15),
+
+                QuickActions(
+                  onPulsa: () => _showComingSoon("Pulsa"),
+                  onPaketData: () => _showComingSoon("Paket Data"),
+                  onListrik: () => _showComingSoon("Listrik"),
+                  onRiwayat: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const HistoryScreen(),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 15),
+
+                // TRANSAKSI
+                Container(
+                  color: Colors.grey[50],
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              "QR Code Anda",
+                            const Text(
+                              "Transaksi Terakhir",
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.grey[800],
                               ),
                             ),
-                            const SizedBox(height: 12),
-
-                            // QR CODE
-                            QrImageView(
-                              data: _userEmail,
-                              version: QrVersions.auto,
-                              size: 220,
-                              backgroundColor: Colors.white,
-                            ),
-
-                            const SizedBox(height: 8),
-                            Text(
-                              _userEmail,
-                              style: TextStyle(
-                                color: Colors.grey[700],
-                                fontSize: 14,
+                            GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const HistoryScreen(),
+                                ),
+                              ),
+                              child: Text(
+                                "Lihat Selengkapnya",
+                                style: TextStyle(
+                                  color: Colors.blue[700],
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  );
-                },
-                child: Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.qr_code,
-                    color: Colors.white,
-                    size: 36,
-                  ),
-                ),
-              ),
-            ],
-          ),
+                      const SizedBox(height: 10),
 
-          const SizedBox(height: 20),
-          const Divider(color: Colors.white30),
-          const SizedBox(height: 12),
-
-          // USER INFO
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.white24,
-                child: ClipOval(
-                  child: Image.network(
-                    _userPhotoUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("Gagal memuat foto: $_userPhotoUrl"),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      });
-                      return const Icon(Icons.person, color: Colors.white);
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _userName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                      // KIRIM DATA DARI HOME SCREEN
+                      TransactionList(
+                        transactions: _transactions,
+                        userId: _userId,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      (_userTelp.trim().isNotEmpty) ? _userTelp : _userEmail,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.black,
+        unselectedItemColor: Colors.grey,
+        currentIndex: 0,
+        onTap: (i) {
+          if (i == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ScanQrScreen()),
+            );
+          } else {
+            _showComingSoon(
+              ["Beranda", "Bayar", "Scan QR", "Notif", "Akun"][i],
+            );
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined, size: 30),
+            label: "",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long, size: 30),
+            label: "",
+          ),
+          BottomNavigationBarItem(
+            icon: Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Icon(Icons.qr_code_scanner, size: 40),
+            ),
+            label: "",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications_outlined, size: 30),
+            label: "",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline, size: 30),
+            label: "",
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildQuickActions() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Aksi Cepat",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
+class TransactionList extends StatelessWidget {
+  final List<TransactionModel> transactions;
+  final String userId;
 
-          Row(
-            children: [
-              Expanded(
-                child: _buildQuickActionCard(
-                  icon: Icons.add_circle,
-                  label: "Top Up",
-                  color: Colors.green,
-                  onTap: () {
-                    _showSnackBar("Fitur Top Up segera hadir!", Colors.blue);
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildQuickActionCard(
-                  icon: Icons.send,
-                  label: "Transfer",
-                  color: Colors.blue,
-                  onTap: () {
-                    _showSnackBar("Fitur Transfer segera hadir!", Colors.blue);
-                  },
-                ),
-              ),
-            ],
-          ),
+  const TransactionList({
+    super.key,
+    required this.transactions,
+    required this.userId,
+  });
 
-          const SizedBox(height: 12),
-
-          Row(
-            children: [
-              Expanded(
-                child: _buildQuickActionCard(
-                  icon: Icons.history,
-                  label: "Riwayat",
-                  color: Colors.orange,
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen()));
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildQuickActionCard(
-                  icon: Icons.qr_code_scanner,
-                  label: "Scan QR",
-                  color: Colors.purple,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ScanQrScreen()),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMenuList() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: [
-          const Text(
-            "Menu Lainnya",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-
-          _buildMenuItem(
-            icon: Icons.account_balance,
-            title: "Rekening Bank",
-            subtitle: "Kelola rekening bank Anda",
-            onTap: () => _showSnackBar("Fitur segera hadir!", Colors.blue),
-          ),
-          _buildMenuItem(
-            icon: Icons.credit_card,
-            title: "Kartu",
-            subtitle: "Atur kartu debit & kredit",
-            onTap: () => _showSnackBar("Fitur segera hadir!", Colors.blue),
-          ),
-          _buildMenuItem(
-            icon: Icons.settings,
-            title: "Pengaturan",
-            subtitle: "Atur preferensi akun Anda",
-            onTap: () => _showSnackBar("Fitur segera hadir!", Colors.blue),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActionCard({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+  @override
+  Widget build(BuildContext context) {
+    if (transactions.isEmpty) {
+      return Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color, size: 32),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
+          padding: const EdgeInsets.all(20),
+          child: Text("Belum ada transaksi"),
         ),
-      ),
-    );
-  }
+      );
+    }
 
-  Widget _buildMenuItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        onTap: onTap,
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+    return ListView.builder(
+      padding: const EdgeInsets.all(10),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: transactions.length.clamp(
+        0,
+        3,
+      ), // tampilkan 3 transaksi terbaru
+      itemBuilder: (context, index) {
+        final tx = transactions[index];
+        final amount = tx.amount;
+        final isSender = tx.fromId == userId;
+        final formattedDate = timeago.format(tx.createdAt);
+
+        return ListTile(
+          leading: Icon(
+            isSender ? Icons.arrow_upward : Icons.arrow_downward,
+            color: isSender ? Colors.red : Colors.green,
           ),
-          child: Icon(icon, color: Colors.blue),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
-        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-      ),
+          title: Text(
+            "${(isSender ? "Kirim ke" : "Penerima dari")} ${tx.email}",
+          ),
+          subtitle: Text(formattedDate),
+          trailing: Text(
+            (isSender ? "-" : "+") + formatRupiah(amount),
+            style: TextStyle(
+              color: isSender ? Colors.red : Colors.green,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        );
+      },
     );
   }
 }

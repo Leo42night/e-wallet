@@ -5,8 +5,8 @@ import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
 
 import 'package:provider/provider.dart';
-import 'providers/auth_provider.dart';
 import 'providers/transfer_provider.dart';
+import 'providers/saldo_providers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,8 +14,8 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => TransferProvider()), // WAJIB ADA
+        ChangeNotifierProvider(create: (_) => SaldoProvider()),
       ],
       child: const MyApp(),
     ),

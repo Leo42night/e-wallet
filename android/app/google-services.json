@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "719314687214",
+    "project_id": "main-eec39",
+    "storage_bucket": "main-eec39.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:719314687214:android:e9a1b45528e7de6439cfff",
+        "android_client_info": {
+          "package_name": "com.example.e_wallet"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "719314687214-hbrickfi18h2to8ikakuang7cgqd5m59.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.e_wallet",
+            "certificate_hash": "3cecfe2f5da35fc34065930e2424c07f3389d433"
+          }
+        },
+        {
+          "client_id": "719314687214-r89t15rtn0i8617a8gpop0864efucinm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAx4BlCt4kh1CC7BPVBEdDPNbkirkkEAHc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "719314687214-r89t15rtn0i8617a8gpop0864efucinm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

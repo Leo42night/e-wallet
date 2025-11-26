@@ -12,5 +12,6 @@ Team:
 4. Satrio Martin M. W. - H1101231039 
 
 ## Feature & Tech
+- PNPM (v10) (Node Package Manager untuk server BE)
 
 ## How To Use

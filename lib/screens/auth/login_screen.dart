@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/api_service.dart';
-import 'home_screen.dart';
+import '../../services/api_service.dart';
+import '../home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -52,10 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
       // ================================
       if (user != null) {
         final apiService = ApiService();
-        final result = await apiService.loginWithGoogle(
-          name: user.displayName ?? googleUser.displayName ?? 'User',
-          email: user.email ?? googleUser.email,
-        );
+        final result = await apiService.loginWithGoogle(user);
 
         if (result['success']) {
           final prefs = await SharedPreferences.getInstance();
@@ -63,11 +60,13 @@ class _LoginScreenState extends State<LoginScreen> {
           await prefs.setString(
               'user_name', user.displayName ?? googleUser.displayName ?? 'User');
           await prefs.setString('user_email', user.email ?? googleUser.email);
-
           await prefs.setDouble(
             'user_balance',
             double.tryParse(result['user']['balance'] ?? '0') ?? 0.0,
           );
+          await prefs.setString('user_id', result['user']['id'] ?? '');
+          await prefs.setString('user_photo_url', result['user']['photo_url'] ?? '');
+          await prefs.setString('user_telp', result['user']['telp'] ?? '');
 
           if (mounted) {
             Navigator.pushReplacement(
@@ -122,13 +121,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.account_balance_wallet,
                         size: 80,
-                        color: Colors.white,
+                        color: Colors.blue,
                       ),
                     ),
                     const SizedBox(height: 32),
@@ -163,9 +162,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                   shape: BoxShape.circle,
                                 ),
                                 child: Image.asset(
-                                  'assets/google_logo.png',
+                                  'assets/images/google-logo.png',
                                   height: 24,
-                                  width: 24,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.error,
+                                    color: Colors.red,
+                                  ),
                                 ),
                               ),
                               label: const Text(

@@ -1,5 +1,7 @@
 // screens/transfer_confirm_pin_screen.dart
+import 'package:e_wallet/services/api_service.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../../providers/transfer_provider.dart';
 
@@ -8,7 +10,8 @@ class TransferConfirmPinScreen extends StatefulWidget {
   const TransferConfirmPinScreen({super.key, required this.note});
 
   @override
-  State<TransferConfirmPinScreen> createState() => _TransferConfirmPinScreenState();
+  State<TransferConfirmPinScreen> createState() =>
+      _TransferConfirmPinScreenState();
 }
 
 class _TransferConfirmPinScreenState extends State<TransferConfirmPinScreen> {
@@ -22,7 +25,10 @@ class _TransferConfirmPinScreenState extends State<TransferConfirmPinScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text('Masukkan PIN'),
       ),
       body: Column(
@@ -51,7 +57,17 @@ class _TransferConfirmPinScreenState extends State<TransferConfirmPinScreen> {
               crossAxisSpacing: 20,
               childAspectRatio: 1.4,
               children: [
-                ...['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => _pinButton(d)),
+                ...[
+                  '1',
+                  '2',
+                  '3',
+                  '4',
+                  '5',
+                  '6',
+                  '7',
+                  '8',
+                  '9',
+                ].map((d) => _pinButton(d)),
                 const SizedBox(),
                 _pinButton('0'),
                 _pinButton('delete', isDelete: true),
@@ -72,25 +88,58 @@ class _TransferConfirmPinScreenState extends State<TransferConfirmPinScreen> {
     return GestureDetector(
       onTap: () async {
         if (isDelete) {
-          if (pin.isNotEmpty) setState(() => pin = pin.substring(0, pin.length - 1));
+          if (pin.isNotEmpty) {
+            setState(() {
+              pin = pin.substring(0, pin.length - 1);
+            });
+          }
           return;
         }
         if (pin.length >= 6) return;
         setState(() => pin += text);
 
         if (pin.length == 6) {
-          final success = await Provider.of<TransferProvider>(context, listen: false).verifyPin(pin);
+          final transfer = Provider.of<TransferProvider>(
+            context,
+            listen: false,
+          );
+          print("TRANSFER: ${transfer.selectedContact?.id}");
+          final success = await transfer.verifyPin(pin);
           if (success) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Transfer Berhasil!')),
-            );
-            Provider.of<TransferProvider>(context, listen: false).resetAll();
-            Navigator.popUntil(context, (route) => route.isFirst);
+            // PROSES API transferBalance
+            final prefs = await SharedPreferences.getInstance();
+            try {
+              final currUserId = prefs.getString('user_id') ?? '';
+              final api = ApiService();
+              final message = 'Transfer ke ${transfer.selectedContact?.name} Berhasil!'; 
+              final result = await api.transferBalance(
+                from: currUserId,
+                to: transfer.selectedContact!.id,
+                amount: transfer.amount?.toDouble() ?? 0,
+                message: 'Transfer ke ${transfer.selectedContact?.name}',
+              );
+              if (result['success'] && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+                Provider.of<TransferProvider>(
+                  context,
+                  listen: false,
+                ).resetAll();
+                Navigator.popUntil(context, (route) => route.isFirst);
+              } else if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(result['error'])),
+                );
+              }
+            } catch (e) {
+              print("ERROR trasferConfirmPinScreenState pinButton tap: $e");
+            }
           } else {
             setState(() => pin = '');
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('PIN Salah!')),
-            );
+            if (mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('PIN Salah!')));
+            }
           }
         }
       },

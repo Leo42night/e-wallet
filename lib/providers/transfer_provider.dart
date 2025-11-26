@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import '../models/contact.dart';
+import '../models/user.dart';
 
 class TransferProvider with ChangeNotifier {
-  Contact? _selectedContact;
+  User? _selectedContact;
   String _enteredNumber = '';
   int? _amount;
   bool _isProcessing = false;
 
-  Contact? get selectedContact => _selectedContact;
+  User? get selectedContact => _selectedContact;
   String get enteredNumber => _enteredNumber;
   int? get amount => _amount;
   bool get isProcessing => _isProcessing;
 
-  void selectContact(Contact c) {
+  void selectContact(User c) {
     _selectedContact = c;
-    _enteredNumber = c.detail;
+    _enteredNumber = c.telp;
     notifyListeners();
   }
 

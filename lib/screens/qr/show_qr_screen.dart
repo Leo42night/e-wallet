@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import '../providers/auth_provider.dart';
+import '../../providers/auth_provider.dart';
 
 class ShowQrScreen extends StatelessWidget {
   const ShowQrScreen({super.key});

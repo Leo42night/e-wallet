@@ -1,9 +1,9 @@
 // widgets/contact_tile.dart
 import 'package:flutter/material.dart';
-import '../models/contact.dart';
+import '../models/user.dart';
 
 class ContactTile extends StatelessWidget {
-  final Contact contact;
+  final User contact;
   final VoidCallback onTap;
 
   const ContactTile({
@@ -65,7 +65,7 @@ class ContactTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    contact.detail,
+                    contact.email,
                     style: const TextStyle(
                       fontSize: 14,
                       color: Colors.black54,
@@ -83,7 +83,7 @@ class ContactTile extends StatelessWidget {
   }
 
   Widget _buildAvatar() {
-    final bool hasBankLogo = contact.bankLogoPath != 'assets/images/kontak_preview.jpg';
+    final bool hasBankLogo = contact.photoUrl != 'assets/images/kontak_preview.jpg';
 
     if (hasBankLogo) {
       return ClipRRect(
@@ -94,7 +94,7 @@ class ContactTile extends StatelessWidget {
           color: Colors.white,
           padding: const EdgeInsets.all(6),
           child: Image.asset(
-            contact.bankLogoPath,
+            contact.photoUrl,
             fit: BoxFit.contain,
             errorBuilder: (_, __, ___) => _buildInitialAvatar(),
           ),

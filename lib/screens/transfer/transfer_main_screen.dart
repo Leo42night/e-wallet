@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'transfer_pick_contact_screen.dart';
-import 'transfer_input_number_screen.dart';
+import 'transfer_input_telp_screen.dart';
 
 class TransferMainScreen extends StatefulWidget {
   const TransferMainScreen({super.key});

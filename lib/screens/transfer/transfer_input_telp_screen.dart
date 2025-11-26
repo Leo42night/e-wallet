@@ -1,7 +1,8 @@
 // screens/transfer_input_number_screen.dart
+import 'package:e_wallet/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/contact.dart';
+import '../../models/user.dart';
 import '../../providers/transfer_provider.dart';
 import 'transfer_amount_screen.dart';
 
@@ -22,21 +23,12 @@ class _TransferInputNumberScreenState extends State<TransferInputNumberScreen>
   String? _errorText;
   bool _isLoading = false;
 
-  // DUMMY DATABASE — bisa punya banyak nomor per orang
-  static final Map<String, Contact> _dummyDatabase = {
-    '33170257': Contact(id: '1', name: 'NURHASANAH', detail: '33170257', bankLogoPath: 'assets/images/aaabni.png'),
-    '085895675549': Contact(id: '2', name: 'Khoirul Fuad', detail: '085895675549'),
-    '085349363277': Contact(id: '3', name: 'Nicholas', detail: '085349363277'),
-    '75423246': Contact(id: '6', name: 'SLAMET', detail: '75423246', bankLogoPath: 'assets/images/aaabni.png'),
-    '52438087': Contact(id: '7', name: 'SYAHRI', detail: '52438087', bankLogoPath: 'assets/images/aaabni.png'),
-    // Bisa tambah nomor lain untuk orang yang sama:
-    // '081234567890': Contact(id: '2', name: 'Khoirul Fuad', detail: '085895675549'), // contoh nomor lain
-  };
-
   // Cek apakah nomor ada di database
-  Future<Contact?> _findContactByNumber(String number) async {
-    await Future.delayed(const Duration(milliseconds: 800)); // simulasi API misalnya ehehe
-    return _dummyDatabase[number.trim()];
+  Future<User?> _findContactByTelp(String telp) async {
+    final api = ApiService();
+    final result = await api.getUserDataByEmail(telp);
+    if(result['success'] == true) return User.fromJson(result['user'] ?? {});
+    return null;
   }
 
   Future<void> _validateAndProceed(String input) async {
@@ -67,7 +59,7 @@ class _TransferInputNumberScreenState extends State<TransferInputNumberScreen>
     }
 
     // Cek di database
-    final contact = await _findContactByNumber(trimmed);
+    final contact = await _findContactByTelp(trimmed);
 
     if (!mounted) return;
 

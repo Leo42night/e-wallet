@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../services/api_service.dart';
-import 'login_screen.dart';
+import 'auth/login_screen.dart';
+import 'package:e_wallet/screens/qr/scan_qr_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,6 +18,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _userName = '';
   String _userEmail = '';
+  String _userPhotoUrl = '';
+  String _userTelp = '';
   double _balance = 0.0;
   bool _isLoading = true;
   bool _isRefreshing = false;
@@ -31,18 +35,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final email = prefs.getString('user_email');
 
     if (email != null) {
-      // Load cache dulu
       setState(() {
         _userName = prefs.getString('user_name') ?? '';
         _userEmail = email;
+        _userPhotoUrl = prefs.getString('user_photo_url') ?? '';
+        _userTelp = prefs.getString('user_telp') ?? '';
         _balance = prefs.getDouble('user_balance') ?? 0.0;
         _isLoading = false;
       });
 
-      // Refresh dari server
       await _refreshFromServer();
     } else {
-      // Tidak ada session → redirect login
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -61,16 +64,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (email != null) {
       final api = ApiService();
-      final result = await api.getUserData(email);
+      final result = await api.getUserDataByEmail(email);
+      print("_refreshFromServer:>>> $result");
 
-      if (result['success'] == true) {
+      if (result['success'] == true && result['user'] != null) {
         final user = result['user'];
 
-        // Handle balance: bisa int, double, atau null
-        final balanceValue = user['balance'];
-        final double newBalance = balanceValue == null
-            ? 0.0
-            : (balanceValue is int ? balanceValue.toDouble() : balanceValue);
+        final double newBalance =
+            double.tryParse(user['balance'] ?? '0') ?? 0.0;
+
+        if (_balance != newBalance) {
+          _showSnackBar("Saldo diperbarui", Colors.green);
+        }
 
         if (mounted) {
           setState(() {
@@ -79,11 +84,19 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         }
 
-        // Save cache
         await prefs.setDouble('user_balance', newBalance);
         await prefs.setString('user_name', user['name'] ?? '');
       } else {
-        _showSnackBar("Gagal refresh data: ${result['error']}", Colors.orange);
+        _showSnackBar("Gagal Load Data User: ${result['error']}", Colors.orange);
+        // kembali ke halaman login
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+          );
+        }
+        // reset shared preferences
+        await prefs.clear();
       }
     }
 
@@ -116,12 +129,10 @@ class _HomeScreenState extends State<HomeScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
 
-      // Google logout (safe)
       try {
         await GoogleSignIn().signOut();
       } catch (_) {}
 
-      // Firebase logout
       try {
         await FirebaseAuth.instance.signOut();
       } catch (_) {}
@@ -148,9 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -173,10 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-          ),
+          IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
         ],
       ),
       body: RefreshIndicator(
@@ -199,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ===================== UI COMPONENTS ======================
+  // ===================== UI ======================
 
   Widget _buildBalanceCard() {
     return Container(
@@ -222,32 +228,128 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Total Saldo",
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+          // ROW SALDO + QR POPUP
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Saldo
+              Expanded(
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Total Saldo",
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Rp ${_formatRupiah(_balance)}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // 🔥 TOMBOL QR CODE
+              GestureDetector(
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      content: Container(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              "QR Code Anda",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+
+                            // QR CODE
+                            QrImageView(
+                              data: _userEmail,
+                              version: QrVersions.auto,
+                              size: 220,
+                              backgroundColor: Colors.white,
+                            ),
+
+                            const SizedBox(height: 8),
+                            Text(
+                              _userEmail,
+                              style: TextStyle(
+                                color: Colors.grey[700],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.qr_code,
+                    color: Colors.white,
+                    size: 36,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            'Rp ${_formatRupiah(_balance)}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+
           const SizedBox(height: 20),
           const Divider(color: Colors.white30),
           const SizedBox(height: 12),
 
-          // User info
+          // USER INFO
           Row(
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 20,
                 backgroundColor: Colors.white24,
-                child: Icon(Icons.person, color: Colors.white),
+                child: ClipOval(
+                  child: Image.network(
+                    _userPhotoUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("Gagal memuat foto: $_userPhotoUrl"),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      });
+                      return const Icon(Icons.person, color: Colors.white);
+                    },
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,13 +364,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      _userEmail,
+                      (_userTelp.trim().isNotEmpty) ? _userTelp : _userEmail,
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 12,
                       ),
                       overflow: TextOverflow.ellipsis,
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -338,12 +440,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   label: "Scan QR",
                   color: Colors.purple,
                   onTap: () {
-                    _showSnackBar("Fitur Scan QR segera hadir!", Colors.blue);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ScanQrScreen()),
+                    );
                   },
                 ),
               ),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -383,8 +488,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Helper UI components
-
   Widget _buildQuickActionCard({
     required IconData icon,
     required String label,
@@ -416,7 +519,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -443,7 +546,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           child: Icon(icon, color: Colors.blue),
         ),
-        title: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        title: Text(
+          title,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
         subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
         trailing: const Icon(Icons.chevron_right, color: Colors.grey),
       ),

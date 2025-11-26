@@ -20,11 +20,19 @@ class ApiService {
   /// Login atau register user dengan Google OAuth
   /// Mengirim nama dan email ke backend
   /// Backend akan create user baru atau return user existing
-  Future<Map<String, dynamic>> loginWithGoogle({
-    required String name,
-    required String email,
-  }) async {
+  Future<Map<String, dynamic>> loginWithGoogle(user) async {
     try {
+      print("LOGIN WITH GOOGLE user: $user");
+      final userData = {
+        "uid": user.uid,
+        "email": user.email,
+        "name": user.displayName,
+        "photo_url": user.photoURL,
+        "phone_number": user.phoneNumber,
+        "provider_id": user.providerData.isNotEmpty
+            ? user.providerData[0].providerId
+            : null,
+      };
       final response = await http
           .post(
             Uri.parse('$baseUrl/auth/google'),
@@ -32,10 +40,7 @@ class ApiService {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
             },
-            body: jsonEncode({
-              'name': name,
-              'email': email,
-            }),
+            body: jsonEncode(userData),
           )
           .timeout(timeoutDuration);
 
@@ -91,12 +96,12 @@ class ApiService {
 
   /// Get user data berdasarkan email
   /// Digunakan untuk refresh balance dan data user
-  Future<Map<String, dynamic>> getUserData(String email) async {
+  Future<Map<String, dynamic>> getUserDataByEmail(String email) async {
     try {
       final encodedEmail = Uri.encodeComponent(email);
       final response = await http
           .get(
-            Uri.parse('$baseUrl/user/$encodedEmail'),
+            Uri.parse('$baseUrl/user/email/$encodedEmail'),
             headers: {
               'Accept': 'application/json',
             },
@@ -150,6 +155,37 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getUserDataByTelp(String telp) async {
+    try {
+      final encodedTelp = Uri.encodeComponent(telp);
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/user/telp/$encodedTelp'),
+            headers: {
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(timeoutDuration);
+      if(response.statusCode == 200){
+        final data = jsonDecode(response.body);
+        print("DECODED (USER): $data");
+        return {
+          'success': true,
+          'user': data['user'],
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Error: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Terjadi kesalahan: ${e.toString()}',
+      };
+    }
+  }
   /// Update balance user (untuk fitur top up)
   Future<Map<String, dynamic>> updateBalance({
     required String email,
@@ -206,11 +242,13 @@ class ApiService {
 
   /// Transfer balance antar user
   Future<Map<String, dynamic>> transferBalance({
-    required String fromEmail,
-    required String toEmail,
+    required String from,
+    required String to,
     required double amount,
+    required String message,
   }) async {
     try {
+      print("FROM: $from, TO: $to, AMOUNT: $amount, MESSAGE: $message");
       final response = await http
           .post(
             Uri.parse('$baseUrl/transaction/transfer'),
@@ -219,12 +257,14 @@ class ApiService {
               'Accept': 'application/json',
             },
             body: jsonEncode({
-              'from_email': fromEmail,
-              'to_email': toEmail,
+              'from_id': from,
+              'to_id': to,
               'amount': amount,
+              'message': message,
             }),
           )
           .timeout(timeoutDuration);
+      print("response.statusCode: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

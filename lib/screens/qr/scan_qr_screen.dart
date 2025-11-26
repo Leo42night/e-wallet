@@ -1,9 +1,11 @@
+import 'package:e_wallet/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
-import '../../providers/transfer_provider.dart';
-import '../../models/contact.dart';
-import '../screens/transfer/transfer_amount_screen.dart';
+import 'package:vibration/vibration.dart';
+import 'package:e_wallet/providers/transfer_provider.dart';
+import 'package:e_wallet/models/user.dart';
+import 'package:e_wallet/screens/transfer/transfer_amount_screen.dart';
 
 class ScanQrScreen extends StatefulWidget {
   const ScanQrScreen({super.key});
@@ -31,7 +33,6 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
   }
 
   void handleScan(BarcodeCapture capture) async {
-    // Cek apakah sedang memproses atau baru saja scan (cooldown 1 detik)
     if (isProcessing) return;
     
     final now = DateTime.now();
@@ -51,15 +52,12 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
     // Pause camera saat processing
     await cameraController.stop();
 
-    // Vibrate feedback (opsional, butuh package vibration)
-    // HapticFeedback.mediumImpact();
+    // Vibrate feedback
+    bool? canVibrate = await Vibration.hasVibrator();
+    if(canVibrate == true) Vibration.vibrate();
 
-    // TODO: Panggil API untuk validasi QR dan ambil data user
-    // Simulasi API call
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    // Simulasi response dari API
-    final scannedContact = await _fetchContactFromQR(code);
+    // Ambil Data
+    final scannedContact = await _fetchUserFromQR(code);
 
     if (!mounted) return;
 
@@ -105,7 +103,7 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: Image.asset(
-                          scannedContact.bankLogoPath,
+                          scannedContact.photoUrl,
                           fit: BoxFit.contain,
                           errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 24),
                         ),
@@ -121,7 +119,7 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
                             style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                           ),
                           Text(
-                            scannedContact.detail,
+                            scannedContact.email,
                             style: const TextStyle(color: Colors.grey, fontSize: 13),
                           ),
                         ],
@@ -204,36 +202,17 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
     }
   }
 
-  // TODO: Ganti dengan API call yang sebenarnya
-  Future<Contact?> _fetchContactFromQR(String qrCode) async {
-    // Simulasi API call
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    // Dummy data - ganti dengan API response
-    final Map<String, Contact> dummyDatabase = {
-      '1': Contact(id: '1', name: 'NURHASANAH', detail: '33170257', bankLogoPath: 'assets/images/aaabni.png'),
-      '2': Contact(id: '2', name: 'Khoirul Fuad', detail: '085895675549'),
-      '3': Contact(id: '3', name: 'Nicholas', detail: '085349363277'),
-      '6': Contact(id: '6', name: 'SLAMET', detail: '75423246', bankLogoPath: 'assets/images/aaabni.png'),
-      '7': Contact(id: '7', name: 'SYAHRI', detail: '52438087', bankLogoPath: 'assets/images/aaabni.png'),
-    };
-
-    // Return contact jika ditemukan, null jika tidak
-    return dummyDatabase[qrCode];
-
-    /* 
-    // Contoh implementasi API:
+  Future<User?> _fetchUserFromQR(String email) async {
     try {
-      final response = await http.get(Uri.parse('YOUR_API/qr/$qrCode'));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return Contact.fromJson(data);
+      final api = ApiService();
+      final result = await api.getUserDataByEmail(email);
+      if (result['success'] == true) {
+        return User.fromJson(result['user']);
       }
       return null;
     } catch (e) {
       return null;
     }
-    */
   }
 
   @override

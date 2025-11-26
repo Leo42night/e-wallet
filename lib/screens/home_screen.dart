@@ -65,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (email != null) {
       final api = ApiService();
       final result = await api.getUserDataByEmail(email);
-      print("_refreshFromServer:>>> $result");
+      // print("_refreshFromServer:>>> $result");
 
       if (result['success'] == true && result['user'] != null) {
         final user = result['user'];

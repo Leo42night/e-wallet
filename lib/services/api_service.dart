@@ -11,8 +11,8 @@ class ApiService {
   // - Real Device: http://YOUR_COMPUTER_IP:3000/api (contoh: http://192.168.1.100:3000/api)
   // Untuk production: https://your-domain.com/api
   
-  // static const String baseUrl = 'http://10.0.2.2:3000/api'; // Default untuk Android Emulator
-  static const String baseUrl = 'http://192.168.1.10:3000/api'; // Default untuk Android Emulator
+  static const String baseUrl = 'https://be-wallet-690018681390.asia-southeast1.run.app/api'; // Production
+  // static const String baseUrl = 'http://192.168.1.10:3000/api'; // Local test
   
   // Timeout duration
   static const Duration timeoutDuration = Duration(seconds: 30);
@@ -22,7 +22,7 @@ class ApiService {
   /// Backend akan create user baru atau return user existing
   Future<Map<String, dynamic>> loginWithGoogle(user) async {
     try {
-      print("LOGIN WITH GOOGLE user: $user");
+      // print("LOGIN WITH GOOGLE user: $user");
       final userData = {
         "uid": user.uid,
         "email": user.email,
@@ -44,10 +44,10 @@ class ApiService {
           )
           .timeout(timeoutDuration);
 
-      print("RAW RESPONSE: ${response.body}");
+      // print("RAW RESPONSE: ${response.body}");
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print("DECODED: $data");
+        // print("DECODED: $data");
         return {
           'success': true,
           'user': data['user'],
@@ -101,17 +101,17 @@ class ApiService {
       final encodedEmail = Uri.encodeComponent(email);
       final response = await http
           .get(
-            Uri.parse('$baseUrl/user/email/$encodedEmail'),
+            Uri.parse('$baseUrl/user/email?email=$encodedEmail'),
             headers: {
               'Accept': 'application/json',
             },
           )
           .timeout(timeoutDuration);
 
-      print("RAW RESPONSE (USER): ${response.body}");
+      // print("RAW RESPONSE (USER): ${response.body}");
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print("DECODED (USER): $data");
+        // print("DECODED (USER): $data");
         return {
           'success': true,
           'user': data['user'],
@@ -160,7 +160,7 @@ class ApiService {
       final encodedTelp = Uri.encodeComponent(telp);
       final response = await http
           .get(
-            Uri.parse('$baseUrl/user/telp/$encodedTelp'),
+            Uri.parse('$baseUrl/user/telp?telp=$encodedTelp'),
             headers: {
               'Accept': 'application/json',
             },
@@ -168,7 +168,7 @@ class ApiService {
           .timeout(timeoutDuration);
       if(response.statusCode == 200){
         final data = jsonDecode(response.body);
-        print("DECODED (USER): $data");
+        // print("DECODED (USER): $data");
         return {
           'success': true,
           'user': data['user'],
@@ -206,10 +206,10 @@ class ApiService {
           )
           .timeout(timeoutDuration);
 
-      print("RAW RESPONSE: ${response.body}");
+      // print("RAW RESPONSE: ${response.body}");
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print("DECODED: $data");
+        // print("DECODED: $data");
 
         return {
           'success': true,
@@ -248,7 +248,7 @@ class ApiService {
     required String message,
   }) async {
     try {
-      print("FROM: $from, TO: $to, AMOUNT: $amount, MESSAGE: $message");
+      // print("FROM: $from, TO: $to, AMOUNT: $amount, MESSAGE: $message");
       final response = await http
           .post(
             Uri.parse('$baseUrl/transaction/transfer'),
@@ -264,7 +264,7 @@ class ApiService {
             }),
           )
           .timeout(timeoutDuration);
-      print("response.statusCode: ${response.statusCode}");
+      // print("response.statusCode: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

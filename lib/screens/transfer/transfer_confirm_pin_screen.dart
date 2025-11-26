@@ -103,7 +103,7 @@ class _TransferConfirmPinScreenState extends State<TransferConfirmPinScreen> {
             context,
             listen: false,
           );
-          print("TRANSFER: ${transfer.selectedContact?.id}");
+          // print("TRANSFER: ${transfer.selectedContact?.id}");
           final success = await transfer.verifyPin(pin);
           if (success) {
             // PROSES API transferBalance
@@ -131,7 +131,7 @@ class _TransferConfirmPinScreenState extends State<TransferConfirmPinScreen> {
                 );
               }
             } catch (e) {
-              print("ERROR trasferConfirmPinScreenState pinButton tap: $e");
+              // print("ERROR trasferConfirmPinScreenState pinButton tap: $e");
             }
           } else {
             setState(() => pin = '');

@@ -1,22 +1,22 @@
 // screens/home_screen.dart
-import 'package:e_wallet/models/transaction.dart';
-import 'package:e_wallet/screens/history.dart';
 import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
+import 'package:e_wallet/models/transaction.dart';
+import 'package:e_wallet/providers/saldo_providers.dart';
+import 'package:e_wallet/screens/history.dart';
+import 'package:e_wallet/screens/qr/scan_qr_screen.dart';
 import '../services/api_service.dart';
 import 'auth/login_screen.dart';
-import 'package:e_wallet/screens/qr/scan_qr_screen.dart';
-import 'package:e_wallet/utils/helpers.dart';
 import 'package:e_wallet/screens/qr/show_qr_screen.dart';
-import 'package:e_wallet/screens/transfer/transfer_main_screen.dart';
-import '../providers/saldo_providers.dart';
-import '../widgets/action_bar.dart';
-import '../widgets/mini_action_bar.dart';
-// import '../widgets/mini_history.dart';
+import 'package:e_wallet/widgets/transfer_main_screen.dart';
+import 'package:e_wallet/widgets/action_bar.dart';
+import 'package:e_wallet/widgets/mini_action_bar.dart';
+import 'package:e_wallet/utils/helpers.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

@@ -1,23 +1,22 @@
 // screens/home_screen.dart
-// IMPORTS: Mengimpor paket dan file yang diperlukan untuk aplikasi e-wallet
-import 'package:e_wallet/models/transaction.dart';
-import 'package:e_wallet/screens/history.dart';
 import 'package:flutter/material.dart';
-import 'package:timeago/timeago.dart'
-    as timeago; // Untuk format waktu relatif (misal: "2 jam yang lalu")
-import 'package:provider/provider.dart'; // State management untuk menyimpan dan mengakses state global
-import 'package:shared_preferences/shared_preferences.dart'; // Menyimpan data lokal di device
-import 'package:google_sign_in/google_sign_in.dart'; // Login dengan Google
-import 'package:firebase_auth/firebase_auth.dart'; // Autentikasi Firebase
-import '../services/api_service.dart'; // Service untuk komunikasi dengan API backend
-import 'auth/login_screen.dart';
+import 'package:timeago/timeago.dart' as timeago;
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import 'package:e_wallet/models/transaction.dart';
+import 'package:e_wallet/providers/saldo_providers.dart';
+import 'package:e_wallet/screens/history.dart';
 import 'package:e_wallet/screens/qr/scan_qr_screen.dart';
-import 'package:e_wallet/utils/helpers.dart'; // Helper functions seperti formatRupiah()
+import '../services/api_service.dart';
+import 'auth/login_screen.dart';
 import 'package:e_wallet/screens/qr/show_qr_screen.dart';
-import 'package:e_wallet/screens/transfer/transfer_main_screen.dart';
-import '../providers/saldo_providers.dart'; // Provider untuk mengelola state saldo
-import '../widgets/action_bar.dart';
-import '../widgets/mini_action_bar.dart';
+import 'package:e_wallet/widgets/transfer_main_screen.dart';
+import 'package:e_wallet/widgets/action_bar.dart';
+import 'package:e_wallet/widgets/mini_action_bar.dart';
+import 'package:e_wallet/utils/helpers.dart';
 
 /// CLASS: HomeScreen - Widget utama layar beranda
 /// FUNGSI: Menampilkan dashboard pengguna dengan saldo, riwayat transaksi, dan menu aksi

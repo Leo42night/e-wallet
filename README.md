@@ -26,6 +26,5 @@ Tech:
 - Google Sign In
 - Google Cloud Run
 - Google Cloud SQL
-- 
 
-## How To Use
+Main Repo: https://github.com/Leo42night/perak2025
